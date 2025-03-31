@@ -1,0 +1,70 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Usuario {
+  id           String   @id @default(uuid()) @db.Uuid
+  nome         String   @db.VarChar(100)
+  email        String   @unique @db.VarChar(100)
+  senha        String   @db.Text
+  criadoEm     DateTime @default(now()) @map("criado_em")
+  atualizadoEm DateTime @updatedAt @map("atualizado_em")
+
+  tweets    Tweet[]
+  likes     Like[]
+  following Follower[] @relation("Following")
+  followers Follower[] @relation("Followers")
+
+  @@map("usuarios")
+}
+
+model Tweet {
+  id           String    @id @default(uuid()) @db.Uuid
+  descricao    String?   @db.Text
+  tipo         TipoTweet @default(tweet)
+  usuarioId    String    @map("usuario_id") @db.Uuid
+  criadoEm     DateTime  @default(now()) @map("criado_em")
+  atualizadoEm DateTime  @updatedAt @map("atualizado_em")
+
+  usuario  Usuario @relation(fields: [usuarioId], references: [id])
+  likes    Like[]
+  replies  Tweet[] @relation("TweetReplies")
+  parent   Tweet?  @relation("TweetReplies", fields: [parentId], references: [id])
+  parentId String? @map("parent_id") @db.Uuid
+
+  @@map("tweets")
+}
+
+enum TipoTweet {
+  tweet
+  reply
+}
+
+model Like {
+  id        String @id @default(uuid()) @db.Uuid
+  usuarioId String @map("usuario_id") @db.Uuid
+  tweetId   String @map("tweet_id") @db.Uuid
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id])
+  tweet   Tweet   @relation(fields: [tweetId], references: [id])
+
+  @@unique([usuarioId, tweetId]) // Garante que um usuário não pode curtir mais de uma vez o mesmo tweet
+  @@map("likes")
+}
+
+model Follower {
+  id          String @id @default(uuid()) @db.Uuid
+  followerId  String @map("seguidor_id") @db.Uuid
+  followingId String @map("seguindo_id") @db.Uuid
+
+  follower  Usuario @relation("Following", fields: [followerId], references: [id])
+  following Usuario @relation("Followers", fields: [followingId], references: [id])
+
+  @@unique([followerId, followingId]) // Garante que um usuário não pode seguir a si mesmo nem duplicar follow
+  @@map("seguidores")
+}
