@@ -25,7 +25,7 @@ model Usuario {
 
 model Tweet {
   id           String    @id @default(uuid()) @db.Uuid
-  descricao    String?   @db.Text
+  descricao    String    @db.Text
   tipo         TipoTweet @default(tweet)
   usuarioId    String    @map("usuario_id") @db.Uuid
   criadoEm     DateTime  @default(now()) @map("criado_em")

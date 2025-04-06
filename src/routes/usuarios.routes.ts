@@ -1,13 +1,21 @@
-import { Router } from "express";
-import { UsuarioController } from "../controllers/usuarios.controller";
+import express from 'express';
+import {
+  createUserController,
+  getUserByIdController,
+  updateUserController,
+  deleteUserController,
+  loginUserController,
+} from '../controllers/usuarios.controller';
+import { autenticar } from '../middlewares/autenticacao';
 
-const router = Router();
-const usuarioController = new UsuarioController();
+const userRoutes = express.Router();
 
-router.post("/", usuarioController.cadastrar);
-router.get("/", usuarioController.listar);
-router.get("/:id", usuarioController.buscarPorId);
-router.put("/:id", usuarioController.atualizar);
-router.delete("/:id", usuarioController.excluir);
+// Defina as rotas para usuários
+userRoutes.post('/', createUserController);
+userRoutes.get('/:id', autenticar, getUserByIdController);
+userRoutes.put('/:id', autenticar, updateUserController);
+userRoutes.delete('/:id', autenticar, deleteUserController);
+userRoutes.post('/login', loginUserController); // Rota de login
 
-export default router;
+
+export { userRoutes };

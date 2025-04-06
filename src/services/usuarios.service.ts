@@ -1,86 +1,55 @@
-import { Usuario } from "@prisma/client";
-import { prismaClient } from "../database/prisma.client";
-import { AtualizarUsuarioDto, CadastrarUsuarioDto, ListarUsuarioDto } from "../dtos/usuarios.dto";
-import { HTTPError } from "../utils/http.error";
+import { prismaClient } from '../database/prisma.client';
+import { Usuario } from '@prisma/client';
+import { hash, compare } from 'bcrypt';
 
-// Tipos Utilitários TS
-type UsuarioParcial = Omit<Usuario, "senha">;
-
-export class UsuarioService {
-  public async cadastrar({ email, nome, senha }: CadastrarUsuarioDto): Promise<UsuarioParcial> {
-    const emailJaCadastrado = await prismaClient.usuario.findUnique({
-      where: { email },
-    });
-
-    if (emailJaCadastrado) {
-      throw new HTTPError(409, "E-mail já cadastrado por outro usuário");
-    }
-
-    const novoUsuario = await prismaClient.usuario.create({
-      data: {
-        nome,
-        email,
-        senha,
-      },
-    });
-
-    const { senha: _, ...usuarioSemSenha } = novoUsuario;
-    return usuarioSemSenha;
-  }
-
-  public async listar({ nome }: ListarUsuarioDto): Promise<UsuarioParcial[]> {
-    const usuariosDB = await prismaClient.usuario.findMany({
-      where: {
-        nome: {
-          contains: nome,
-          mode: "insensitive",
-        },
-      },
-      orderBy: {
-        nome: "asc",
-      },
-    });
-
-    return usuariosDB.map(({ senha, ...usuario }) => usuario);
-  }
-
-  public async buscarPorId(idUsuario: string): Promise<UsuarioParcial> {
-    const usuario = await prismaClient.usuario.findUnique({
-      where: { id: idUsuario },
-    });
-
-    if (!usuario) {
-      throw new HTTPError(404, "Usuário não encontrado");
-    }
-
-    const { senha, ...usuarioSemSenha } = usuario;
-    return usuarioSemSenha;
-  }
-
-  public async atualizar(id: string, { email, nome, senha }: AtualizarUsuarioDto): Promise<UsuarioParcial> {
-    await this.buscarPorId(id);
-
-    const usuarioAtualizado = await prismaClient.usuario.update({
-      where: { id },
-      data: {
-        email,
-        nome,
-        senha,
-      },
-    });
-
-    const { senha: _, ...usuarioSemSenha } = usuarioAtualizado;
-    return usuarioSemSenha;
-  }
-
-  public async excluir(idUsuario: string): Promise<UsuarioParcial> {
-    await this.buscarPorId(idUsuario);
-
-    const usuarioExcluido = await prismaClient.usuario.delete({
-      where: { id: idUsuario },
-    });
-
-    const { senha, ...usuarioSemSenha } = usuarioExcluido;
-    return usuarioSemSenha;
-  }
+// Função para criar um novo usuário
+async function createUser(data: Omit<Usuario, 'id'>): Promise<Usuario> {
+  const hashedPassword = await hash(data.senha, 10);
+  const usuarioCriado = await prismaClient.usuario.create({
+    data: {
+      ...data,
+      senha: hashedPassword,
+    },
+  });
+  return usuarioCriado;
 }
+
+// Função para obter um usuário pelo ID
+async function getUserById(id: string): Promise<Usuario | null> {
+  const usuarioPorId = await prismaClient.usuario.findUnique({
+    where: { id: id },
+  });
+  return usuarioPorId;
+}
+
+// Função para atualizar um usuário
+async function updateUser(id: string, data: Partial<Omit<Usuario, 'id' | 'password'>>): Promise<Usuario> {
+  const usuarioAtualizado = await prismaClient.usuario.update({
+    where: { id: id },
+    data: data,
+  });
+  return usuarioAtualizado;
+}
+
+// Função para deletar um usuário
+async function deleteUser(id: string): Promise<Usuario> {
+  const usuarioDeletado = await prismaClient.usuario.delete({
+    where: { id: id },
+  });
+  return usuarioDeletado
+}
+
+// Função para encontrar usuário por email
+async function findUserByEmail(email: string): Promise<Usuario | null> {
+  const user = await prismaClient.usuario.findUnique({
+    where: { email: email },
+  });
+  return user;
+}
+
+// Função para comparar a senha do login
+async function comparePassword(password: string, hashedPassword: string): Promise<boolean> {
+  return compare(password, hashedPassword);
+}
+
+export { createUser, getUserById, updateUser, deleteUser, findUserByEmail, comparePassword };

@@ -1,29 +1,16 @@
-import { Router } from "express";
+import express from 'express';
+import {
+  criarLikeController,
+  obterLikePorIdController,
+  deletarLikeController
+} from '../controllers/like.controller';
+import { autenticar } from '../middlewares/autenticacao'; // Importe o middleware de autenticação
 
+const likeRoutes = express.Router();
 
-export class Like {
-    public static bind(): Router {
-        const router = Router();
+// Rotas para likes
+likeRoutes.get('/:id', obterLikePorIdController);
+likeRoutes.post('/', autenticar, criarLikeController); // Apenas usuários autenticados podem dar like
+likeRoutes.delete('/:id', autenticar, deletarLikeController); // Apenas usuários autenticados podem deletar likes
 
-        router.get("likes", controller.listar);
-        router.get(
-      "/likes/:id",
-      [authMiddleware, validateUidFormatMiddleware],
-      controller.buscarPorID
-    );
-    router.post("/likes", [authMiddleware], controller.cadastrar);
-    router.put(
-      "/likes/:id",
-      [authMiddleware, validateUidFormatMiddleware],
-      controller.atualizar
-    );
-    router.delete(
-      "/likes/:id",
-      [authMiddleware, validateUidFormatMiddleware],
-      controller.excluir
-    );
-
-    return router;
-
-    }
-}
+export { likeRoutes };

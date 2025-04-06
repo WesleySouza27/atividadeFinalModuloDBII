@@ -1,15 +1,17 @@
-import express from "express";
-import { envs } from "./envs";
+import { app } from './app';
+import { prismaClient } from './database/prisma.client';
+import { Usuario } from '@prisma/client';
 
-const app = express();
-app.use(express.json());
+declare global {
+  namespace Express {
+    interface Request {
+      usuario?: Usuario; // Adiciona a propriedade `usuario` ao tipo Request
+    }
+  }
+}
 
-app.get("/", (_, res) => {
-  res.status(200).json({
-    success: true,
-    message: "API is running",
-  });
+const PORT = process.env.PORT || 3030;
+
+app.listen(PORT, () => {
+  console.log(`Servidor a correr na porta ${PORT}`);
 });
-
-
-app.listen(envs.PORT, () => console.log("Server is running"));
